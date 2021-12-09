@@ -12,10 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM jenkins/jenkins:lts-alpine
+FROM google/cloud-sdk:alpine as cloud-sdk
+
+FROM jenkins/jenkins:2.324-alpine
 
 USER root
-RUN apk update && apk add --no-cache git maven nodejs npm
+RUN apk update && apk add --no-cache git maven nodejs npm python3
+RUN mkdir /var/log/jenkins
+RUN mkdir /var/cache/jenkins
+RUN chown -R jenkins:jenkins /var/log/jenkins
+RUN chown -R jenkins:jenkins /var/cache/jenkins
 USER jenkins
 
 COPY --chown=jenkins plugins.txt /usr/share/jenkins/ref/plugins.txt
@@ -26,6 +32,10 @@ RUN /usr/local/bin/install-plugins.sh < /usr/share/jenkins/ref/plugins.txt
 COPY --chown=jenkins jenkins.yml /var/jenkins_home/casc_configs/jenkins.yaml
 ENV CASC_JENKINS_CONFIG=/var/jenkins_home/casc_configs/jenkins.yaml
 
+COPY --from=cloud-sdk /google-cloud-sdk /var/jenkins_home/google-cloud-sdk
+ENV PATH="/var/jenkins_home/google-cloud-sdk/bin:${PATH}"
+
 ENV JAVA_OPTS="-Djenkins.install.runSetupWizard=false -Dhudson.model.DirectoryBrowserSupport.CSP=\"sandbox allow-same-origin allow-scripts; default-src 'self'; script-src * 'unsafe-inline' ; img-src *; style-src * 'unsafe-inline'; font-src *\" ${JAVA_OPTS}"
+ENV JENKINS_OPTS="--handlerCountMax=300 --logfile=/var/log/jenkins/jenkins.log --webroot=/var/cache/jenkins/war"
 ENV JENKINS_ADMIN_PASS=admin
-ENV APIGEE_HOSTURL=https://api.enterprise.apigee.com
+ENV APIGEE_HOSTURL=https://apigee.googleapis.com

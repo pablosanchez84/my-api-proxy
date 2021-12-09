@@ -10,10 +10,16 @@ The CICD pipeline consists of:
   deployment of feature branches as separate proxies in the same environment
 - Static code analysis using [eslint](https://eslint.org/)
 - Unit testing using [mocha](https://mochajs.org/)
-- Integration testing of the deployed proxy using
-  [apickli](https://github.com/apickli/apickli)
 - Packaging and deployment of the API proxy bundle using
   [Apigee Deploy Maven Plugin](https://github.com/apigee/apigee-deploy-maven-plugin)
+- Integration testing of the deployed proxy using
+  [apickli](https://github.com/apickli/apickli)
+
+It also contains an example configuration for running the CI/CD
+pipeline in an orchestration tool:
+
+- Using fully managed Google Cloud Build for Apigee X/hybrid and Edge
+- Using a self-managed Jenkins Server for Apigee Edge
 
 ## Development
 
@@ -40,14 +46,42 @@ The CICD pipeline consists of:
   `airports-cicd-feature-ABC/v1`:
 
   ``` sh
-  TEST_HOST=$APIGEE_ORG-$APIGEE_ENV.apigee.net TEST_BASE_PATH='/ airports-cicd-feature-ABC/v1' npm run integration-test
+  TEST_HOST=$APIGEE_ORG-$APIGEE_ENV.apigee.net TEST_BASE_PATH='/airports-cicd-feature-ABC/v1' npm run integration-test
   ```
 
-## Run Cloud Build Deployment
+## Initialize a Git Repository
+
+Create a Git repository to hold your API Proxy.
+You can either create a Google Source repository
+
+```sh
+gcloud services enable sourcerepo.googleapis.com
+export REPO_NAME="apigee-cicd-demo"
+gcloud source repos create $REPO_NAME
+GIT_URL=$(gcloud source repos describe $REPO_NAME --format="value(url)")
+```
+
+or create a GitHub repository
+
+```sh
+GIT_URL='https://github.com/ORG/REPO.git'
+```
+
+```sh
+cd devrel/references/cicd-pipeline
+git init
+git remote add origin $GIT_URL
+git checkout -b feature/cicd-pipeline
+git add .
+git commit -m "initial commit"
+git push -u origin feature/cicd-pipeline
+```
+
+## Orchestration using Run Cloud
 
 The instructions below explain how to trigger an Apigee CI/CD pipeline manually
-via the gcloud command. You can obviously also configure Cloud Build triggers on
-your SCM tool to automatically trigger a deployment.
+via the gcloud command and via a push trigger on a Google Source Repository.
+Similarly push triggers can also configured on other Git repositories.
 
 ### Apigee hybrid / Apigee X
 
@@ -72,14 +106,32 @@ gcloud projects add-iam-policy-binding "$PROJECT_ID" \
   --role="roles/apigee.apiAdmin"
 ```
 
-Run the following command to trigger a cloud build manually:
+Configure the (externally reachable) hostname of your Apigee environment
+for the integration test:
 
 ```sh
-gcloud builds submit --config=./ci-config/cloudbuild/cloudbuild.yaml \
-  --substitutions=_API_VERSION=google,_DEPLOYMENT_ORG=$PROJECT_ID,_INT_TEST_HOST=api.my-host.example.com,_INT_TEST_BASE_PATH=/airports-cicd-experiment/v1,BRANCH_NAME=experiment
+APIGEE_ORG="$PROJECT_ID"
+APIGEE_ENV=test1
+APIGEE_HOSTNAME=api.my-host.example.com
 ```
 
-### Apigee SaaS
+Run the deployment (with a simulated git branch name)
+
+```sh
+gcloud builds submit --config='./ci-config/cloudbuild/cloudbuild.yaml' \
+  --substitutions="_API_VERSION=google,_DEPLOYMENT_ORG=$PROJECT_ID,_APIGEE_TEST_ENV=$APIGEE_ENV,_INT_TEST_HOST=$APIGEE_HOSTNAME,BRANCH_NAME=experiment"
+```
+
+Or set up a push-trigger for the Google source repository
+
+```sh
+gcloud beta builds triggers create cloud-source-repositories \
+    --repo="$REPO_NAME" --branch-pattern='.*' --name="cicd-example" \
+    --build-config='ci-config/cloudbuild/cloudbuild.yaml' \
+    --substitutions="_API_VERSION=google,_DEPLOYMENT_ORG=$PROJECT_ID,_APIGEE_TEST_ENV=$APIGEE_ENV,_INT_TEST_HOST=$APIGEE_HOSTNAME"
+```
+
+### Apigee Edge
 
 Requires the Cloud Build API to be enabled and a Service Account with the
 following role:
@@ -112,10 +164,19 @@ echo "$APIGEE_PASS" | gcloud secrets create devrel_apigee_pass --data-file=-
 Run the deployment (with a simulated git branch name)
 
 ```sh
-gcloud builds submit  --config=./ci-config/cloudbuild/cloudbuild.yaml --substitutions=_API_VERSION=apigee,_INT_TEST_HOST=$APIGEE_ORG-$APIGEE_ENV.apigee.net,_INT_TEST_BASE_PATH=/airports-cicd-experiment/v1,_DEPLOYMENT_ORG=$APIGEE_ORG,BRANCH_NAME=experiment
+gcloud builds submit  --config=./ci-config/cloudbuild/cloudbuild.yaml --substitutions="_API_VERSION=apigee,_INT_TEST_HOST=$APIGEE_ORG-$APIGEE_ENV.apigee.net,_DEPLOYMENT_ORG=$APIGEE_ORG,BRANCH_NAME=experiment"
 ```
 
-## Run a Jenkins Deployment
+Or set up a push-trigger for the Google source repository
+
+```sh
+gcloud beta builds triggers create cloud-source-repositories \
+    --repo="$REPO_NAME" --branch-pattern='.*' --name="cicd-example-edge" \
+    --build-config='ci-config/cloudbuild/cloudbuild.yaml' \
+    --substitutions="_API_VERSION=apigee,_DEPLOYMENT_ORG=$APIGEE_ORG,_APIGEE_TEST_ENV=$APIGEE_ENV,_INT_TEST_HOST=$APIGEE_ORG-$APIGEE_ENV.apigee.net"
+```
+
+## Orchestration using Jenkins
 
 ### Requirement: Jenkins Server
 
@@ -135,8 +196,8 @@ use that one.
 
 You are responsible to ensure you have the following plugins enabled:
 
-- [Multibranch Pipeline](https://plugins.jenkins.io/workflow-multibranch/)
-- [HTML Pubisher](https://plugins.jenkins.io/htmlpublisher/)
+- [Multi-Branch Pipeline](https://plugins.jenkins.io/workflow-multibranch/)
+- [HTML Publisher](https://plugins.jenkins.io/htmlpublisher/)
 - [Cucumber Reports](https://plugins.jenkins.io/cucumber-reports/)
 
 ### CI/CD Configuration Instructions
@@ -145,25 +206,9 @@ You are responsible to ensure you have the following plugins enabled:
 
 Start or configure your Jenkins server as described above.
 
-#### Initialize a Git Repository
+### Create a multi-branch Jenkins job
 
-Create a Git repository to hold your API Proxy. To use the `cicd-pipeline`
-in a Github repository `github.com/my-user/my-api-proxy-repo` follow these
-steps:
-
-```bash
-cd devrel/references/cicd-pipeline
-git init
-git remote add origin git@github.com:my-user/my-api-proxy.git
-git checkout -b feature/cicd-pipeline
-git add .
-git commit -m "initial commit"
-git push -u origin feature/cicd-pipeline
-```
-
-### Create a multibranch Jenkins job
-
-Use the UI to configure the Jenkins Job for multibranch pipelines:
+Use the UI to configure the Jenkins Job for multi-branch pipelines:
 
 1. Set the Git repo e.g. `https://github.com/my-user/my-api-proxy-repo`
 2. Path to the Jenkinsfile e.g. `ci-config/jenkins/Jenkinsfile`
@@ -174,7 +219,7 @@ Use the UI to configure the Jenkins Job for multibranch pipelines:
 ### Run the pipeline
 
 1. Open the multi-branch pipeline you just created.
-2. Click `Scan Multibranch Pipeline Now` to detect branches with a
+2. Click `Scan Multi-branch Pipeline Now` to detect branches with a
     Jenkinsfile.
 3. Explore the build(s) that get triggered.
 4. Explore the final build success.
