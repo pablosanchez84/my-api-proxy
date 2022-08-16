@@ -1,8 +1,9 @@
-cucumber-reports:5.6.0
-git:4.9.0
-htmlpublisher:1.27
-junit:1.53
-matrix-project:1.19
-script-security:1.78
-token-macro:267.vcdaea6462991
-workflow-step-api:2.24
+configuration-as-code:1429.v09b_044a_c93de
+cucumber-reports:5.7.0
+git:4.11.1
+htmlpublisher:1.30
+junit:1.63
+mask-passwords:3.1
+token-macro:293.v283932a_0a_b_49
+workflow-aggregator:2.7
+workflow-step-api:625.vd896b_f445a_f8

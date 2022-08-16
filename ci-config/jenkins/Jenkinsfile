@@ -9,7 +9,7 @@ pipeline {
             string(name: 'APIGEE_TEST_ENV_P', defaultValue: 'test1')
             string(name: 'APIGEE_PROD_ENV_P', defaultValue: '')
             string(name: 'TEST_HOST_P', defaultValue: 'api.example.com')
-            string(name: 'WORK_DIR_P', defaultValue: '.')
+            string(name: 'WORK_DIR_P', defaultValue: 'references/cicd-pipeline')
             choice(name: 'GCP_SA_AUTH_P', choices: [ "vm-scope", "jenkins-scope", "token" ], description: 'GCP SA/Token Scope'  )
 
             string(name: 'APIGEE_USER_P', defaultValue: 'not-used')

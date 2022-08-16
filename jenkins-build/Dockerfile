@@ -1,4 +1,4 @@
-# Copyright 2020 Google LLC
+# Copyright 2021 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,11 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-env:
-  node: true
-  es6: true
-extends:
-  - prettier
-rules:
-  no-var: 0
-root: true
+
+FROM jenkins/jenkins:2.346-alpine
+
+USER root
+RUN apk update && apk add --no-cache git maven nodejs npm
+USER jenkins
+
+COPY --chown=jenkins plugins.txt /usr/share/jenkins/ref/plugins.txt
+RUN jenkins-plugin-cli --plugin-file /usr/share/jenkins/ref/plugins.txt
+
+COPY --chown=jenkins jenkins.yml /var/jenkins_home/casc_configs/jenkins.yaml
+ENV CASC_JENKINS_CONFIG=/var/jenkins_home/casc_configs/jenkins.yaml
+
+ENV JENKINS_ADMIN_PASS=admin
+ENV APIGEE_HOSTURL=https://api.enterprise.apigee.com

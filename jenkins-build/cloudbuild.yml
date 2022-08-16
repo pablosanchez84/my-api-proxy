@@ -12,11 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-env:
-  node: true
-  es6: true
-extends:
-  - prettier
-rules:
-  no-var: 0
-root: true
+steps:
+  - name: "gcr.io/cloud-builders/docker"
+    args:
+      - build
+      - "--tag=gcr.io/$PROJECT_ID/apigee/devrel-jenkins-base:latest"
+      - "--file=./Dockerfile"
+      - .
+images:
+  - "gcr.io/$PROJECT_ID/apigee/devrel-jenkins-base:latest"
