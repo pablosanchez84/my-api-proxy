@@ -14,7 +14,7 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 -->
-<AssignMessage name="Maksj.AirportsMock">
+<AssignMessage name="AssignMessage.AirportsMock">
     <Set>
         <!-- Source: https://en.wikipedia.org/wiki/List_of_busiest_airports_by_passenger_traffic (2019) -->
         <Payload contentType="application/json">
