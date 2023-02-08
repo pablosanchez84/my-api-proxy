@@ -64,7 +64,7 @@ pipeline {
               if( ! env.AUTHOR_EMAIL ){ env.AUTHOR_EMAIL = params.AUTHOR_EMAIL_P }
 
               env.GCP_SA_AUTH = "token"
-              env.APIGEE_TOKEN = "ya29.A0AVA9y1vX01QVR-fx0_2l_jYwSU7Z40SO3w_b6wzLucHHeKwPfSVFOARp5DoR8YUZ6MBNvAkJnav4Uv1jR-NzW5wyvmvWMhDFk5Cz2fr5TyanncbTeSiyk_Qm3Ry_uv_4_jkzZaeYPuZEUaxGNNPy8qqJZ06szsftiJq1lQaCgYKATASATASFQE65dr8Oz1OdYz-3hD5x1PCJv2ilA0173"
+              env.APIGEE_TOKEN = "ya29.a0AVvZVsqfFRdBUZtysPxrFA4lKWzoqbk_3Qmo07VBjPTHA1PlhcWbfTFaB-xKYaJMZlzHrgXDTx_M-8zI-Y72YVWaul6FYy5xWASTUWhTbi0Fclidz53FGXkh5yYg0jLjjcTPZuMsrPnOwVV_4R9-GOoHJTPV4pdchthzjQaCgYKAWUSAQASFQGbdwaI3etsl96-UPQQ3IdOD0ghmw0173"
 
               // Main branch for Apigee test environment
               if (env.GIT_BRANCH == "main") {
